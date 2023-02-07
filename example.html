@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mapbox Assignment</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+
+
+    #menu {
+        background: #fff;
+        position: absolute;
+        z-index: 1;
+        top: 100px;
+        right: 10px;
+        border-radius: 3px;
+        width: 120px;
+        border: 1px solid rgba(0, 0, 0, 0.4);
+        font-family: 'Open Sans', sans-serif;
+    }
+
+    #menu a {
+        font-size: 13px;
+        color: #404040;
+        display: block;
+        margin: 0;
+        padding: 0;
+        padding: 10px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+        text-align: center;
+    }
+
+    #menu a:last-child {
+        border: none;
+    }
+
+    #menu a:hover {
+        background-color: #f8f8f8;
+        color: #404040;
+    }
+
+    #menu a.active {
+        background-color: #3887be;
+        color: #ffffff;
+    }
+
+    #menu a.active:hover {
+        background: #3074a4;
+    }
+
+</style>
+</head>
+<body>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+<nav id="menu"></nav>
+
+<div id="map"></div>
+
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1Ijoic3J1c2h0aXUiLCJhIjoiY2o4cTVkeGU1MHBxYjJybzAzMHAyODBobCJ9.lRjbEaFi733uM3tqSMlNZw';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-71.054, 42.358],
+        zoom: 10
+    });
+
+var showWeather = function(data) {
+   $("#temp").text(`${Math.round(data.main.temp - 273.15)}°C`)
+    $("#description").text(data.weather[0].description)
+    $("#place").text(data.name)
+    image.src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+};
+
+map.on('style.load', function() {
+        map.addSource('contours', {
+            type: 'vector',
+            url: 'mapbox://mapbox.mapbox-terrain-v2'
+        });
+        map.addLayer({
+            'id': 'contours',
+            'type': 'line',
+            'source': 'contours',
+            'source-layer': 'contour',
+            'layout': {
+                // Make the layer visible by default.
+                'visibility': 'visible',
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#877b59',
+                'line-width': 1
+            }
+        });
+    });
+
+    // After the last frame rendered before the map enters an "idle" state.
+    map.on('idle', () => {
+        // If these two layers were not added to the map, abort
+        if (!map.getLayer('contours') ) {
+            return;
+        }
+
+        // Enumerate ids of the layers.
+        const toggleableLayerIds = ['contours'];
+
+        // Set up the corresponding toggle button for each layer.
+        for (const id of toggleableLayerIds) {
+            // Skip layers that already have a button set up.
+            if (document.getElementById(id)) {
+                continue;
+            }
+
+            // Create a link.
+            var link = document.createElement('a');
+            link.id = id;
+            link.href = '#';
+            link.textContent = id;
+            link.className = 'active';
+
+            // Show or hide layer when the toggle is clicked.
+            link.onclick = function (e) {
+                const clickedLayer = this.textContent;
+                e.preventDefault();
+                e.stopPropagation();
+
+                const visibility = map.getLayoutProperty(
+                    clickedLayer,
+                    'visibility'
+                );
+
+                // Toggle layer visibility by changing the layout object's visibility property.
+                if (visibility === 'visible') {
+                    map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+                    this.className = '';
+                } else {
+                    this.className = 'active';
+                    map.setLayoutProperty(
+                        clickedLayer,
+                        'visibility',
+                        'visible'
+                    );
+                }
+            };
+
+            var layers = document.getElementById('menu');
+            layers.appendChild(link);
+        }
+    });
+
+  map.on('click', function(e) {
+    
+    var coordinates = e.lngLat;
+    var lat = coordinates.lat;
+    var lon = coordinates.lng;
+    var getWeather = function(data) {
+    $.getJSON('http://api.openweathermap.org/data/2.5/weather', {
+        lat: lat,
+        lon: lon,
+        appid: "3db3c4f6f05ab2c2bc9dfb9fda51972a"
+    }, showWeather, 'jsonp');
+};
+
+    $.getJSON('http://ip-api.com/json', getWeather)
+
+    new mapboxgl.Popup()
+      .setLngLat(coordinates)
+      .setHTML(coordinates+'<br>Temperature:<p id ="temp">temperature</p>Place:<p id ="place">place</p>Description:<p id ="description">description</p><img id="image" width="50px" height="50px" src="https://openweathermap.org/img/wn/02n@2x.png">' )
+      .addTo(map);
+  });
+
+
+    var coordinatesGeocoder = function (query) {
+
+        var matches = query.match(
+            /^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i
+        );
+        if (!matches) {
+            return null;
+        }
+
+        function coordinateFeature(lng, lat) {
+            return {
+                center: [lng, lat],
+                geometry: {
+                    type: 'Point',
+                    coordinates: [lng, lat]
+                },
+                place_name: 'Lat: ' + lat + ' Lng: ' + lng,
+                place_type: ['coordinate'],
+                properties: {},
+                type: 'Feature'
+            };
+        }
+
+        var coord1 = Number(matches[1]);
+        var coord2 = Number(matches[2]);
+        var geocodes = [];
+
+        if (coord1 < -90 || coord1 > 90) {
+            // must be lng, lat
+            geocodes.push(coordinateFeature(coord1, coord2));
+        }
+
+        if (coord2 < -90 || coord2 > 90) {
+            // must be lat, lng
+            geocodes.push(coordinateFeature(coord2, coord1));
+        }
+
+        if (geocodes.length === 0) {
+            // else could be either lng, lat or lat, lng
+            geocodes.push(coordinateFeature(coord1, coord2));
+            geocodes.push(coordinateFeature(coord2, coord1));
+        }
+
+        return geocodes;
+    };
+
+    // Add the control to the map.
+    map.addControl(
+        new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            localGeocoder: coordinatesGeocoder,
+            zoom: 10,
+            placeholder: 'Try: -40, 170',
+            mapboxgl: mapboxgl,
+            reverseGeocode: true
+        })
+    );
+</script>
+
+</body>
+</html>
