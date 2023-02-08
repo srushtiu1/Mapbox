@@ -112,10 +112,10 @@ map.on('style.load', function() {
         }
 
         // Enumerate ids of the layers.
-        const toggleableLayerIds = ['contours'];
+        var toggleableLayerIds = ['contours'];
 
         // Set up the corresponding toggle button for each layer.
-        for (const id of toggleableLayerIds) {
+        for (var id of toggleableLayerIds) {
             // Skip layers that already have a button set up.
             if (document.getElementById(id)) {
                 continue;
@@ -130,11 +130,11 @@ map.on('style.load', function() {
 
             // Show or hide layer when the toggle is clicked.
             link.onclick = function (e) {
-                const clickedLayer = this.textContent;
+                var clickedLayer = this.textContent;
                 e.preventDefault();
                 e.stopPropagation();
 
-                const visibility = map.getLayoutProperty(
+                var visibility = map.getLayoutProperty(
                     clickedLayer,
                     'visibility'
                 );
